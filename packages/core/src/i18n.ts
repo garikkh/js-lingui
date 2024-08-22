@@ -63,6 +63,7 @@ export type I18nProps = {
    */
   localeData?: AllLocaleData
   missing?: MissingHandler
+  productionCompileEnabled?: boolean
 }
 
 type Events = {
@@ -85,6 +86,7 @@ export class I18n extends EventEmitter<Events> {
   private _localeData: AllLocaleData = {}
   private _messages: AllMessages = {}
   private _missing?: MissingHandler
+  private _shouldCompile: boolean = true
 
   constructor(params: I18nProps) {
     super()
@@ -94,6 +96,12 @@ export class I18n extends EventEmitter<Events> {
     if (params.localeData != null) this.loadLocaleData(params.localeData)
     if (typeof params.locale === "string" || params.locales) {
       this.activate(params.locale ?? defaultLocale, params.locales)
+    }
+    if (process.env.NODE_ENV === "production") {
+      this._shouldCompile = false
+      if (params.productionCompileEnabled != null) {
+        this._shouldCompile = params.productionCompileEnabled
+      }
     }
   }
 
@@ -239,7 +247,7 @@ export class I18n extends EventEmitter<Events> {
 
     let translation = messageForId || message || id
 
-    if (process.env.NODE_ENV !== "production") {
+    if (this._shouldCompile) {
       translation = isString(translation)
         ? compileMessage(translation)
         : translation
